@@ -81,6 +81,16 @@ Current-run browser acceptance exercised nearby ordering, a distant origin retai
 
 Before the first application checkpoint push, an isolated copy of the exact staged D0/D1 snapshot passed `npm run build`, `uv run ruff check backend`, and `uv run pytest backend/tests -q` (11 passed). Existing dependencies were reused without reinstalling. The build reported a chunk larger than 500 kB; the test-client deprecation warning remains unsuppressed. Unfinished routing additions were excluded from this snapshot. Desktop browser emulation does not prove phone HTTPS or real GPS access.
 
+## Regional routing preparation
+
+The local tooling image is built with `docker build --file routing.Dockerfile --tag foodroute-routing-tools:3.9.1-osmium1.16.0 .`. The Docker build context excludes application data and all files except the Dockerfile and ignore policy. The base is the official Valhalla 3.9.1 Linux amd64 image pinned to `sha256:18cb42988e03c70dc4bc4ca095a259ec4db5e5df928be65956fc1c64c280b47a`; the added native extractor is `osmium-tool=1.16.0-1build1`. No host-global package was installed.
+
+The real regional extraction completed with Osmium `extract -b 106.2,10.35,107.1,11.2 -s smart -S types=restriction`, using the existing PBF read-only and writing `data/routing/pilot.osm.pbf`. It retained original OSM IDs, complete ways and completed restriction relations. The resulting PBF is about 29.2 MB, SHA-256 `b7bd5de6007245d933e01d9408c427c74f45fa9e8bc55267c2c64ee8da08d165`. This is not a full-Vietnam routing graph.
+
+For a fresh routing directory, `uv run --locked python -m backend.prepare_routing data/vietnam-261108.osm.pbf data/routing` wraps that same bounded native command and records source provenance. It refuses existing artifacts instead of replacing them. Do not rerun it over the prepared data. Container limits are 2 CPUs, 4 GiB memory with no extra swap, finite PIDs and no network; an extraction timeout stops only its owned container. Initial Python-level scans exceeded the deadline/node bound and were replaced by the native extractor, not presented as successful imports.
+
+The source is incomplete at region boundaries. The administrative metadata build reported incomplete country boundaries, including Vietnam; those warnings are not proof of correct country-specific motorized access. No profile is enabled until real regional route checks pass. Graph construction, profile acceptance and application route behavior remain R0 gates, independently of this completed extraction.
+
 ## Version control
 
 Publish coherent, exercised implementation slices to the existing `main` branch rather than waiting for one final bulk push or creating an automatic PR. Unfinished work stays outside completed checkpoints. Use ordinary pushes; do not rewrite shared history or bypass branch protections.
